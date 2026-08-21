@@ -1,8 +1,4 @@
-"""In-memory stand-in for the production Calendar model.
-
-Method names match backend-studios/app/models/Calendar.py so the providers
-can stay the same. Storage is a process-local dict instead of SQL.
-"""
+"""In-memory storage for OAuth connections and ICS feed tokens."""
 
 from __future__ import annotations
 

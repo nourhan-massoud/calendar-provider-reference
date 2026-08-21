@@ -1,4 +1,4 @@
-"""Same caller path as CalendarController.connect — no if provider == ..."""
+"""Caller example: factory + one start_connect call, no if provider == ..."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from app.models.Calendar import Calendar
 
 
 def connect(provider: str, user_id: int, role: str = "player", organizer_id: int = 0):
-    """Mirrors CalendarController.connect: factory + one start_connect call."""
+    """Factory + one start_connect call."""
     # Polymorphism: one start_connect() call; Google/Outlook/iCal each run their own implementation.
     prov = get_provider(provider, user_id)
     if not prov:

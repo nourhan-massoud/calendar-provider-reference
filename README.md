@@ -1,10 +1,10 @@
 # Calendar Provider Reference
 
-A sanitized reference implementation of the multi-provider calendar integration used in a larger backend (`backend-studios`).
+A sanitized reference implementation of a multi-provider calendar integration.
 
-The folder layout, class names, factory, and provider method signatures match that codebase so you can read this repo and the production helpers side by side.
+The folder layout, class names, factory, and provider method signatures are kept together so the architecture is easy to follow.
 
-This is **not** a dump of the production application. Flask, SQL, queues, and real credentials are replaced with stand-ins. There are **no production secrets**.
+There are **no real credentials** in this repository. OAuth values come from environment placeholders.
 
 ## Problem
 
@@ -12,7 +12,7 @@ Google Calendar, Microsoft Outlook, and iCal / Apple Calendar do not share one A
 
 ## Why one abstraction
 
-The caller (in production: `CalendarController`) does:
+The application does:
 
 ```python
 from app.helpers.calendar.factory import get_provider
@@ -25,18 +25,18 @@ It does not import Google or Microsoft clients.
 
 ## Architecture
 
-This repo uses the same paths as `backend-studios`:
+Project layout:
 
 ```text
 app/helpers/calendar/     # providers
-app/models/Calendar.py    # persistence (in-memory here, SQL in production)
+app/models/Calendar.py    # in-memory persistence
 app/helpers/Util.py
-app/config.py             # stand-in for Flask current_app.config
+app/config.py             # env-based current_app.config
 ```
 
 ```mermaid
 flowchart TD
-    App[Application / CalendarController]
+    App[Application]
     Factory[get_provider]
     Base[CalendarProviderBase]
     Google[GoogleProvider]
@@ -71,23 +71,17 @@ CalendarProviderBase
        └── ICalProvider     # feed URL only; no OAuth / no push events
 ```
 
-iCal is not forced to implement `exchange_code`. Those methods stay `NotImplementedError` on the base class, same as production.
+iCal is not forced to implement `exchange_code`. Those methods stay `NotImplementedError` on the base class.
 
-`Calendar.py` here keeps the **same method names** as production (`upsert_connection`, `ics_get_or_create_token`, …) but stores data in memory instead of MySQL.
+`Calendar.py` stores connections and ICS tokens in memory for the demo.
 
-`current_app` is a small stand-in. Production uses Flask:
-
-```python
-from flask import current_app as app
-```
-
-This repo:
+Config is a `current_app.config` dict loaded from `.env`:
 
 ```python
 from app.config import current_app as app
 ```
 
-Config **keys** are the same (`GOOGLE_CLIENT_ID`, `MS_CLIENT_ID`, `CLASSFIT_URL`, …). Values come from `.env`.
+Keys include `GOOGLE_CLIENT_ID`, `MS_CLIENT_ID`, and `APP_BASE_URL`. Values are placeholders only.
 
 ## Factory
 
@@ -100,11 +94,11 @@ mapping = {
 }
 ```
 
-`get_provider("yahoo", user_id)` returns `None`, same as production.
+`get_provider("yahoo", user_id)` returns `None`.
 
 ## Polymorphism / strategy
 
-`GoogleProvider` and `OutlookProvider` both implement `create_event(**payload)`. The controller does not care which class it received.
+`GoogleProvider` and `OutlookProvider` both implement `create_event(**payload)`. The caller does not care which class it received.
 
 iCal's `start_connect` returns `("feed_url", url, ...)`. Google/Outlook return `("oauth_redirect", url, ...)`.
 
@@ -159,13 +153,6 @@ pytest
 ```
 
 External Google / Microsoft HTTP calls are mocked.
-
-## What differs from production (~10%)
-
-- `Calendar` is in-memory, not SQL.
-- Flask is replaced by `app.config.current_app`.
-- No controller, queues, or widget HTML.
-- Config values are env placeholders, not production credentials.
 
 ## License
 

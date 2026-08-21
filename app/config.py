@@ -8,13 +8,7 @@ except ImportError:
 
 
 class _FlaskAppStandIn:
-    """Stand-in for Flask's current_app.
-
-    Production providers do: from flask import current_app as app
-    This reference does:     from app.config import current_app as app
-
-    Config *keys* match backend-studios. Values come from the environment.
-    """
+    """Env-backed config, accessed as current_app.config[...]."""
 
     config = {}
 
