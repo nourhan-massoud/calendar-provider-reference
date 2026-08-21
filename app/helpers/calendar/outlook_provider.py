@@ -11,6 +11,7 @@ from app.helpers.calendar.base import CalendarProviderBase
 from app.helpers.Util import fully_decode
 from app.helpers.Util import expand_times
 
+# Adapter: wrap Microsoft Graph calendar APIs so callers never build Graph URLs.
 class OutlookProvider(CalendarProviderBase):
     provider_name = "outlook"
 
@@ -29,6 +30,7 @@ class OutlookProvider(CalendarProviderBase):
                 self.connection_id = row["id"]
 
     # ---------- Connect (OAuth) ----------
+    # Strategy step 2b — Outlook algorithm: OAuth redirect to Microsoft Graph.
     def start_connect(self, role: str = None, organizer_id: int = None, user_id: int = None, return_origin: str = ""):
         role_in = (role or "player").strip().lower()
         org_in = int(organizer_id or 0)
@@ -211,6 +213,7 @@ class OutlookProvider(CalendarProviderBase):
 
 
     # ---------- Events (per connection) ----------
+    # Adapter: app payload → Graph event JSON (subject/start/end, not summary).
     def build_event_body(self, payload):
         start_str, end_str, tz = expand_times(payload)
         title     = fully_decode(payload.get("title", "") or "")
@@ -230,6 +233,7 @@ class OutlookProvider(CalendarProviderBase):
         }
         return {k: v for k, v in body.items() if v is not None}
 
+    # Adapter: POST /me/events, return (id, etag) instead of the raw Graph response.
     def create_event(self, **payload):
         body = self.build_event_body(payload)
         created = self._graph_write("POST", "/me/events", body)

@@ -1,4 +1,4 @@
-"""Minimal caller example — same entry point as CalendarController.connect."""
+"""Same caller path as CalendarController.connect — no if provider == ..."""
 
 from __future__ import annotations
 
@@ -13,31 +13,38 @@ from app.helpers.calendar.factory import get_provider
 from app.models.Calendar import Calendar
 
 
+def connect(provider: str, user_id: int, role: str = "player", organizer_id: int = 0):
+    """Mirrors CalendarController.connect: factory + one start_connect call."""
+    # Polymorphism: one start_connect() call; Google/Outlook/iCal each run their own implementation.
+    prov = get_provider(provider, user_id)
+    if not prov:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+    # Strategy step 3 — context: run whichever algorithm Factory selected, via the same method.
+    intent_type, url, role, organizer_id, state = prov.start_connect(
+        role=role,
+        organizer_id=organizer_id,
+        user_id=user_id,
+    )
+    return {
+        "provider": provider,
+        "type": intent_type,
+        "url": url,
+        "state": state,
+        "role": role,
+        "organizer_id": organizer_id,
+    }
+
+
 def main() -> None:
     Calendar.reset()
     user_id = 1
 
-    google = get_provider("google", user_id)
-    outlook = get_provider("outlook", user_id)
-    ical = get_provider("apple", user_id)
-
-    g_type, g_url, g_role, g_org, g_state = google.start_connect(
-        role="player", organizer_id=0, user_id=user_id
-    )
-    o_type, o_url, o_role, o_org, o_state = outlook.start_connect(
-        role="player", organizer_id=0, user_id=user_id
-    )
-    i_type, i_url, i_role, i_org, i_state = ical.start_connect(
-        role="player", organizer_id=0, user_id=user_id
-    )
-
-    print("Google:", g_type, g_url.split("?")[0])
-    print("Outlook:", o_type, o_url.split("?")[0])
-    print("iCal:", i_type, i_url)
-
-    # After OAuth, the controller does:
-    #   prov = get_provider(provider, user_id, connection_id=connection_id)
-    #   prov.create_event(title="...", start="...", end="...", timezone="UTC", class_id=42)
+    # Same two lines for every vendor. The class behind `prov` changes;
+    # the caller does not.
+    for name in ("google", "outlook", "apple"):
+        result = connect(name, user_id)
+        print(name, result["type"], result["url"].split("?")[0])
 
 
 if __name__ == "__main__":

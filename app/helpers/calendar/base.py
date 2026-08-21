@@ -4,6 +4,7 @@ Abstract base class for every calendar provider.
 from abc import ABC, abstractmethod
 
 
+# Strategy step 1 — interface: the shared operation (start_connect), not a vendor API.
 class CalendarProviderBase(ABC):
     def __init__(self, user_id: int, connection_id: int = None):
         self.user_id = user_id

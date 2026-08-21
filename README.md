@@ -141,18 +141,16 @@ python examples/basic_usage.py
 ```python
 from app.helpers.calendar.factory import get_provider
 
-prov = get_provider("google", user_id=1)
-prov.start_connect(role="player", organizer_id=0, user_id=1)
-# after OAuth callback:
-prov.exchange_code(code, role="player")
-prov.create_event(
-    title="Morning yoga",
-    start="2026-08-21T09:00:00",
-    end="2026-08-21T10:00:00",
-    timezone="UTC",
-    class_id=42,
+prov = get_provider(provider, user_id)
+if not prov:
+    raise ValueError(f"Unsupported provider: {provider}")
+
+intent_type, url, role, organizer_id, state = prov.start_connect(
+    role=role, organizer_id=organizer_id, user_id=user_id
 )
 ```
+
+`provider` is only a string (`"google"` / `"outlook"` / `"ical"`). After `get_provider`, the caller never branches on that name.
 
 ## Tests
 

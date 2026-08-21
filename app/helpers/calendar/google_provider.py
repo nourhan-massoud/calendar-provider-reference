@@ -17,6 +17,7 @@ from app.helpers.Util import expand_times
 from app.models.Calendar import Calendar
 from app.helpers.calendar.base import CalendarProviderBase
 
+# Adapter: wrap Google Calendar API v3 so callers never use googleapiclient directly.
 class GoogleProvider(CalendarProviderBase):
     provider_name = "google"
     required_calendar_scope = "https://www.googleapis.com/auth/calendar.events"
@@ -34,6 +35,7 @@ class GoogleProvider(CalendarProviderBase):
             self.access_token  = row.get("access_token")
             self.refresh_token = row.get("refresh_token")
 
+    # Strategy step 2a — Google algorithm: OAuth redirect to Google Calendar.
     def start_connect(self, role: str, organizer_id: int, user_id: int, return_origin: str = ""):
         # if this is ins view without specific organizer, it will raise an error
         if not organizer_id and role == "instructor":
@@ -219,6 +221,7 @@ class GoogleProvider(CalendarProviderBase):
         cal.mark_connection_revoked(self.user_id, "google")
         return True
 
+    # Adapter: app payload (title/start/end) → Google event JSON (summary/dateTime).
     def build_event_body(self, payload):
         """Build a Google Calendar API event body from a class payload."""
         start_str, end_str, tz_name = expand_times(payload)
@@ -239,6 +242,7 @@ class GoogleProvider(CalendarProviderBase):
         """Public accessor for the Google API service client."""
         return self._service()
 
+    # Adapter: call Google events.insert, return our (id, etag) instead of the raw API object.
     def create_event(self, **payload):
         try:
             body = self.build_event_body(payload)

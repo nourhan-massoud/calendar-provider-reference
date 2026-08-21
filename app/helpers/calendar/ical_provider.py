@@ -3,7 +3,9 @@ from app.config import current_app as app
 from app.models.Calendar import Calendar
 from app.helpers.calendar.base import CalendarProviderBase
 
+# Adapter: wrap an ICS subscribe feed — Apple/iCal has no push events API.
 class ICalProvider(CalendarProviderBase):
+    # Strategy step 2c — iCal algorithm: return an ICS subscribe URL (no OAuth).
     def start_connect(
         self, role: str, organizer_id: int, user_id: int = None, return_origin: str = ""
     ):
