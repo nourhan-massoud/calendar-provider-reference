@@ -109,6 +109,43 @@ iCal's `start_connect` returns `("feed_url", url, ...)`. Google/Outlook return `
 
 A shared payload (`title`, `start`, `end`, `timezone`, `class_id`, …) is mapped to each vendor's JSON inside the provider.
 
+## SOLID, design patterns, and OOP
+
+### SOLID
+
+1. **S — Single Responsibility**  
+   Each provider class talks to one vendor. The factory only constructs. Persistence lives in `Calendar`.
+
+2. **O — Open/Closed**  
+   Add a provider by writing a new class and registering it in `get_provider`. Callers (`prov.start_connect()`) do not change.
+
+3. **L — Liskov Substitution** — partial  
+   Google and Outlook can stand in for each other on `start_connect` / `create_event` / `revoke`. iCal cannot: it has no `create_event`. Treat iCal as a connect/revoke strategy, not a full OAuth calendar client.
+
+4. **I — Interface Segregation** — partial  
+   `CalendarProviderBase` still declares OAuth methods (`build_auth_url`, `exchange_code`) that iCal does not use. They stay `NotImplementedError` on the base.
+
+5. **D — Dependency Inversion**  
+   Application code depends on `CalendarProviderBase`, not on Google Calendar or Microsoft Graph clients.
+
+### Design patterns
+
+1. **Factory** — `get_provider(name, user_id)` picks `GoogleProvider`, `OutlookProvider`, or `ICalProvider` from a string.
+
+2. **Strategy** — `start_connect()` is one operation with three algorithms: Google OAuth, Microsoft OAuth, ICS feed URL.
+
+3. **Adapter** — `build_event_body()` and `create_event()` translate the app payload into Google Calendar JSON, Graph JSON, or an ICS subscribe URL, and hide the vendor SDK/HTTP details.
+
+### OOP
+
+1. **Abstraction** — `CalendarProviderBase` defines the shared contract.
+
+2. **Inheritance** — `GoogleProvider`, `OutlookProvider`, and `ICalProvider` extend that base.
+
+3. **Polymorphism** — `prov = get_provider(...); prov.start_connect(...)` is the same call for every vendor; the runtime type decides the implementation.
+
+4. **Encapsulation** — access tokens, refresh, and vendor API calls stay inside the provider. The caller never builds a Graph URL or a Google `events().insert` request.
+
 ## How to add another provider
 
 1. Add `app/helpers/calendar/new_provider.py` subclassing `CalendarProviderBase`.
